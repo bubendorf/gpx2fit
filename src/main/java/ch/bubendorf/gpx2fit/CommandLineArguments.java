@@ -13,12 +13,41 @@ public class CommandLineArguments {
     @Parameter(names = {"-h", "--help"}, help = true)
     private boolean isHelp = false;
 
+    @Parameter(names = {"-t", "--track"})
+    private boolean tracks = false;
+
+    @Parameter(names = {"-r", "--route"})
+    private boolean routes = false;
+
+    @Parameter(names = {"-w", "--waypoint"})
+    private boolean waypoints = false;
+
     public List<String> getParameters() {
         return parameters;
     }
 
+    public void complete() {
+        if (!tracks && !routes && !waypoints) {
+            tracks = true;
+            routes = true;
+            waypoints = true;
+        }
+    }
+
     public boolean isHelp() {
         return isHelp;
+    }
+
+    public boolean isTracks() {
+        return tracks;
+    }
+
+    public boolean isRoutes() {
+        return routes;
+    }
+
+    public boolean isWaypoints() {
+        return waypoints;
     }
 
     public boolean isValid() {

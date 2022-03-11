@@ -6,6 +6,7 @@ import org.gavaghan.geodesy.GlobalCoordinates;
 
 import java.util.Date;
 
+
 public class WayPoint {
     // instantiate the calculator
     private static final GeodeticCalculator geoCalc = new GeodeticCalculator();
@@ -21,7 +22,7 @@ public class WayPoint {
     private double lon;
     private double ele;
     private Date time;
-    private double totaldist = Double.NaN;
+    private double totalDist = Double.NaN;
     private String name;
 
     public WayPoint(final String name, final double lat, final double lon, final double ele, final Date time) {
@@ -33,6 +34,15 @@ public class WayPoint {
         if (this.time == null) {
             this.time = RefDate;
         }
+    }
+
+    public WayPoint(final io.jenetics.jpx.WayPoint point) {
+        lat = point.getLatitude().doubleValue();
+        lon = point.getLongitude().doubleValue();
+        ele = point.getElevation().isPresent() ? point.getElevation().get().doubleValue() : 0;
+        time = point.getTime().isPresent() ? Date.from(point.getTime().get()) : RefDate;
+//        totalDist =
+        name = point.getName().orElse(null);
     }
 
     public String getName() {
@@ -102,12 +112,12 @@ public class WayPoint {
         } else return d;
     }
 
-    public double getTotaldist() {
-        return totaldist;
+    public double getTotalDist() {
+        return totalDist;
     }
 
-    public void setTotaldist(final double totaldist) {
-        this.totaldist = totaldist;
+    public void setTotalDist(final double totalDist) {
+        this.totalDist = totalDist;
     }
 
 }

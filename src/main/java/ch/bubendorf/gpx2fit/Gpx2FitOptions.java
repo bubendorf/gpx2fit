@@ -10,6 +10,10 @@ public class Gpx2FitOptions {
     private double minCoursePointDistance;
     private int maxPoints;
 
+    private boolean tracks = true;
+    private boolean routes = true;
+    private boolean waypoints = true;
+
     public Gpx2FitOptions() {
         speed = 1000.0 / 14.0 / 60.0;
         use3dDistance = true;
@@ -85,4 +89,27 @@ public class Gpx2FitOptions {
         this.maxPoints = maxPoints;
     }
 
+    public boolean isTracks() {
+        return tracks;
+    }
+
+    public void setTracks(final boolean tracks) {
+        this.tracks = tracks;
+    }
+
+    public boolean isRoutes() {
+        return routes;
+    }
+
+    public void setRoutes(final boolean routes) {
+        this.routes = routes;
+    }
+
+    public boolean isWaypoints() {
+        return waypoints;
+    }
+
+    public void setWaypoints(final boolean waypoints) {
+        this.waypoints = waypoints;
+    }
 }
