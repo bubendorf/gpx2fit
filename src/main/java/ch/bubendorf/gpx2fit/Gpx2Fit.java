@@ -1,6 +1,9 @@
 package ch.bubendorf.gpx2fit;
 
 
+import ch.bubendorf.gpx2fit.fit.FitBufferEncoder;
+import ch.bubendorf.gpx2fit.fit.FitEncoder;
+import ch.bubendorf.gpx2fit.fit.FitFileEncoder;
 import com.garmin.fit.*;
 import io.jenetics.jpx.GPX;
 import io.jenetics.jpx.Route;
@@ -8,7 +11,9 @@ import io.jenetics.jpx.Track;
 import io.jenetics.jpx.TrackSegment;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -77,8 +82,20 @@ public class Gpx2Fit {
         return 1.0 + (g * (19.5 + g * (46.3 + g * (-43.3 + g * (-30.4 + g * 155.4))))) / 3.6;
     }
 
-    public void writeFit(final File outfile) {
+    public void writeFit(final OutputStream outputStream) throws IOException {
+        final FitBufferEncoder encoder = new FitBufferEncoder();
+        writeFit(encoder);
+        final byte[] bytes = encoder.close();
+        outputStream.write(bytes);
+    }
 
+    public void writeFit(final File outfile) {
+        final FitFileEncoder encode = new FitFileEncoder(outfile);
+        writeFit(encode);
+        encode.close();
+    }
+
+    private void writeFit(final FitEncoder encoder) {
         if (pointsToUse.size() == 0) {
             return;
         }
@@ -101,7 +118,6 @@ public class Gpx2Fit {
             rtePoints.clear();
         }*/
 
-        final FileEncoder encode = new FileEncoder(outfile, Fit.ProtocolVersion.V2_0);
         //Generate FileIdMessage
         // Every FIT file MUST contain a 'File ID' message as the first message
         final FileIdMesg fileIdMesg = new FileIdMesg();
@@ -111,14 +127,14 @@ public class Gpx2Fit {
         fileIdMesg.setSerialNumber(12345L);
         fileIdMesg.setNumber(pointsToUse.hashCode());
         fileIdMesg.setTimeCreated(new DateTime(new Date()));
-        encode.write(fileIdMesg); // Encode the FileIDMesg
+        encoder.write(fileIdMesg); // Encode the FileIDMesg
 
         // Every FIT COURSE file MUST contain a Course message
         final CourseMesg courseMesg = new CourseMesg();
         courseMesg.setLocalNum(0);
         courseMesg.setName(getName());
         courseMesg.setSport(Sport.GENERIC);
-        encode.write(courseMesg);
+        encoder.write(courseMesg);
 
         final WayPoint firstWayPoint = pointsToUse.get(0);
         final Date startDate = firstWayPoint.getTime();
@@ -247,7 +263,7 @@ public class Gpx2Fit {
             // Empty
         }
 
-        encode.write(lapMesg);
+        encoder.write(lapMesg);
 
         double cp_min_dist = totalDist / 48.0;
         if (cp_min_dist < gpx2FitOptions.getMinCoursePointDistance())
@@ -274,7 +290,7 @@ public class Gpx2Fit {
                 final String name = wpt.getName();
                 cp.setName(Objects.requireNonNullElse(name, ""));
                 cp.setType(CoursePoint.GENERIC);
-                encode.write(cp);
+                encoder.write(cp);
             }
         }
 
@@ -288,7 +304,7 @@ public class Gpx2Fit {
                 final String name = wpt.getName();
                 cp.setName(Objects.requireNonNullElse(name, ""));
                 cp.setType(CoursePoint.GENERIC);
-                encode.write(cp);
+                encoder.write(cp);
             }
         }
 
@@ -299,7 +315,7 @@ public class Gpx2Fit {
         eventMesg.setEventType(EventType.START);
         eventMesg.setEventGroup((short) 0);
         eventMesg.setTimestamp(new DateTime(startDate));
-        encode.write(eventMesg);
+        encoder.write(eventMesg);
 
         DateTime timestamp = new DateTime(new Date(WayPoint.RefMilliSec));
         long ltimestamp = startDate.getTime();
@@ -329,7 +345,7 @@ public class Gpx2Fit {
 
                     cp.setDistance((float) dist);
                     cp.setTimestamp(timestamp);
-                    encode.write(cp);
+                    encoder.write(cp);
                 }
 
                 if (wpt.equals(lastWayPoint)) {
@@ -339,7 +355,7 @@ public class Gpx2Fit {
                     cp.setType(CoursePoint.GENERIC);
                     cp.setDistance((float) dist);
                     cp.setTimestamp(timestamp);
-                    encode.write(cp);
+                    encoder.write(cp);
                 } else if ((dist - lcDist) > cp_min_dist) {
                     cp.setName("");
                     cp.setType(CoursePoint.GENERIC);
@@ -347,7 +363,7 @@ public class Gpx2Fit {
                     cp.setPositionLong(wpt.getLonSemi());
                     cp.setDistance((float) dist);
                     cp.setTimestamp(timestamp);
-                    encode.write(cp);
+                    encoder.write(cp);
                     lcDist = dist;
                 }
                 last = wpt;
@@ -388,7 +404,7 @@ public class Gpx2Fit {
                     r.setSpeed((float) 0.0);
                 }
 
-                encode.write(r);
+                encoder.write(r);
                 lDist = dist;
                 ltimestamp = l;
             }
@@ -405,8 +421,6 @@ public class Gpx2Fit {
         //timestamp.add(2);
         eventMesg2.setTimestamp(timestamp);
 
-        encode.write(eventMesg2);
-
-        encode.close();
+        encoder.write(eventMesg2);
     }
 }

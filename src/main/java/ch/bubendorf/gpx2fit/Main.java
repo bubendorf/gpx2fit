@@ -30,16 +30,20 @@ public class Main {
         }
 
         final List<String> parameters = cmdArgs.getParameters();
-        final String inputFile = parameters.get(0);
-        final String outputFile = parameters.get(1);
+        final String inputFile = parameters.size() < 1 ? "-" : parameters.get(0);
+        final String outputFile = parameters.size() < 2 ? "-" : parameters.get(1);
 
         final Gpx2FitOptions options = new Gpx2FitOptions();
         options.setTracks(cmdArgs.isTracks());
         options.setRoutes(cmdArgs.isRoutes());
         options.setWaypoints(cmdArgs.isWaypoints());
-        final InputStream inputStream = new FileInputStream(inputFile);
+        final InputStream inputStream = "-".equals(inputFile) ? System.in : new FileInputStream(inputFile);
         final Gpx2Fit gpx2fit = new Gpx2Fit(inputFile, inputStream, options);
 
-        gpx2fit.writeFit(new File(outputFile));
+        if ("-".equals(outputFile)) {
+            gpx2fit.writeFit(System.out);
+        } else {
+            gpx2fit.writeFit(new File(outputFile));
+        }
     }
 }

@@ -7,19 +7,19 @@ import java.util.List;
 @SuppressWarnings("ALL")
 public class CommandLineArguments {
 
-    @Parameter
+    @Parameter(description="[input file|-] [output file|-]")
     private List<String> parameters = new ArrayList<>();
 
-    @Parameter(names = {"-h", "--help"}, help = true)
+    @Parameter(names = {"-h", "--help"}, description="Show this help", help = true)
     private boolean isHelp = false;
 
-    @Parameter(names = {"-t", "--track"})
+    @Parameter(names = {"-t", "--track"}, description="Process only Tracks (<trk / trkseg>)")
     private boolean tracks = false;
 
-    @Parameter(names = {"-r", "--route"})
+    @Parameter(names = {"-r", "--route"}, description="Process only Routes (<rte>)")
     private boolean routes = false;
 
-    @Parameter(names = {"-w", "--waypoint"})
+    @Parameter(names = {"-w", "--waypoint"}, description="Process only Waypoints (<wpts>)")
     private boolean waypoints = false;
 
     public List<String> getParameters() {
