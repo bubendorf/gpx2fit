@@ -12,11 +12,8 @@ public class Main {
     private final static CommandLineArguments cmdArgs = new CommandLineArguments();
 
     public static void main(final String[] args) throws Exception {
-//        String currentPath = new java.io.File(".").getCanonicalPath();
-//        System.out.println("Current dir:" + currentPath);
 
         final JCommander jCommander = new JCommander(cmdArgs);
-//        jCommander.setAllowAbbreviatedOptions(true);
         jCommander.parse(args);
         cmdArgs.complete();
 

@@ -22,7 +22,7 @@ public class WayPoint {
     private double ele;
     private Date time;
     private double totalDist = Double.NaN;
-    private String name;
+    private final String name;
 
     public WayPoint(final String name, final double lat, final double lon, final double ele, final Date time) {
         this.lat = lat;
