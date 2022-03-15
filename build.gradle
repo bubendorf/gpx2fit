@@ -7,7 +7,7 @@ plugins {
 
 apply plugin: 'application'
 
-group 'ch.bubendorf'
+group 'ch.bubendorf.gpx2fit'
 version '1.0'
 
 compileJava {

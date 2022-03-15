@@ -11,7 +11,10 @@ public class CommandLineArguments {
     private List<String> parameters = new ArrayList<>();
 
     @Parameter(names = {"-h", "--help"}, description="Show this help", help = true)
-    private boolean isHelp = false;
+    private boolean help = false;
+
+    @Parameter(names = {"-v", "--version"}, description="Show the version info and exit", help = true)
+    private boolean showVersion = false;
 
     @Parameter(names = {"-t", "--track"}, description="Process only Tracks (<trk / trkseg>)")
     private boolean tracks = false;
@@ -35,7 +38,11 @@ public class CommandLineArguments {
     }
 
     public boolean isHelp() {
-        return isHelp;
+        return help;
+    }
+
+    public boolean isShowVersion() {
+        return showVersion;
     }
 
     public boolean isTracks() {

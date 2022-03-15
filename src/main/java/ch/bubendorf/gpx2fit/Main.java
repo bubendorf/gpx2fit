@@ -16,12 +16,17 @@ public class Main {
 //        System.out.println("Current dir:" + currentPath);
 
         final JCommander jCommander = new JCommander(cmdArgs);
-        jCommander.setAllowAbbreviatedOptions(true);
+//        jCommander.setAllowAbbreviatedOptions(true);
         jCommander.parse(args);
         cmdArgs.complete();
 
         if (cmdArgs.isHelp()) {
             jCommander.usage();
+            System.exit(1);
+        }
+
+        if (cmdArgs.isShowVersion()) {
+            System.out.println("gpx2fit Version " + BuildVersion.getBuildVersion());
             System.exit(1);
         }
 

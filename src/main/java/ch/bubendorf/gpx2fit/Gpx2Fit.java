@@ -19,6 +19,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.garmin.fit.File.COURSE;
+import static com.garmin.fit.Manufacturer.GARMIN;
+import static java.lang.Double.isNaN;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 // Based on https://github.com/gimportexportdevs/gexporter/blob/master/app/src/main/java/org/surfsite/gexporter/Gpx2Fit.java
 public class Gpx2Fit {
 
@@ -58,11 +64,14 @@ public class Gpx2Fit {
                     .collect(Collectors.toList());
         }
 
+        // Per default use the TrackPoints for distance, area, etc.
         pointsToUse.addAll(trkPoints);
         if (pointsToUse.isEmpty()) {
+            // If there are no TrackPoints then use the RoutePoints
             pointsToUse.addAll(rtePoints);
         }
         if (pointsToUse.isEmpty()) {
+            // Else use the Waypoints
             pointsToUse.addAll(wayPoints);
         }
     }
@@ -82,6 +91,12 @@ public class Gpx2Fit {
         return 1.0 + (g * (19.5 + g * (46.3 + g * (-43.3 + g * (-30.4 + g * 155.4))))) / 3.6;
     }
 
+    /**
+     * Convert the tracks, routes and waypoints into a FIT and write it to the OutputStream.
+     *
+     * @param outputStream
+     * @throws IOException
+     */
     public void writeFit(final OutputStream outputStream) throws IOException {
         final FitBufferEncoder encoder = new FitBufferEncoder();
         writeFit(encoder);
@@ -89,42 +104,43 @@ public class Gpx2Fit {
         outputStream.write(bytes);
     }
 
+    /**
+     * Convert the tracks, routes and waypoints into a FIT and write it to the outfile.
+     *
+     * @param outfile
+     */
     public void writeFit(final File outfile) {
         final FitFileEncoder encode = new FitFileEncoder(outfile);
         writeFit(encode);
         encode.close();
     }
 
-    private void writeFit(final FitEncoder encoder) {
+    protected void writeFit(final FitEncoder encoder) {
         if (pointsToUse.size() == 0) {
+            // Nothing to do
             return;
         }
 
-        WayPoint last = null;
+        WayPoint lastWayPoint = null;
         double minEle = Double.NaN;
         double maxEle = Double.NaN;
         double totalAsc = Double.NaN;
         double totalDesc = Double.NaN;
         double totalDist = 0;
-        double lcDist = 0;
-        double lDist = 0;
+        double lastCoursePointDist = 0;
+        double lastDist = 0;
         final double speed = gpx2FitOptions.getSpeed();
         double minLat = 1000.0, minLong = 1000.0;
         double maxLat = -1000.0, maxLong = -1000.0;
         boolean skipExtraCP = false;
 
-/*        if (trkPoints.size() <= rtePoints.size()) {
-            trkPoints.addAll(rtePoints);
-            rtePoints.clear();
-        }*/
-
         //Generate FileIdMessage
         // Every FIT file MUST contain a 'File ID' message as the first message
         final FileIdMesg fileIdMesg = new FileIdMesg();
-        fileIdMesg.setManufacturer(Manufacturer.GARMIN);
-        fileIdMesg.setType(com.garmin.fit.File.COURSE);
-        fileIdMesg.setProduct(12345);
-        fileIdMesg.setSerialNumber(12345L);
+        fileIdMesg.setManufacturer(GARMIN);
+        fileIdMesg.setType(COURSE);
+        fileIdMesg.setProduct(424242); // Was 12345
+        fileIdMesg.setSerialNumber(42424242L); // Was 12345L
         fileIdMesg.setNumber(pointsToUse.hashCode());
         fileIdMesg.setTimeCreated(new DateTime(new Date()));
         encoder.write(fileIdMesg); // Encode the FileIDMesg
@@ -136,14 +152,14 @@ public class Gpx2Fit {
         courseMesg.setSport(Sport.GENERIC);
         encoder.write(courseMesg);
 
-        final WayPoint firstWayPoint = pointsToUse.get(0);
-        final Date startDate = firstWayPoint.getTime();
+        final WayPoint startWayPoint = pointsToUse.get(0);
+        final Date startDate = startWayPoint.getTime();
 
-        final WayPoint lastWayPoint = pointsToUse.get(pointsToUse.size() - 1);
+        final WayPoint endWayPoint = pointsToUse.get(pointsToUse.size() - 1);
 
         boolean forceSpeed = gpx2FitOptions.isForceSpeed();
-        if (firstWayPoint.getTime().getTime() == lastWayPoint.getTime().getTime()) {
-            if (!Double.isNaN(speed))
+        if (startWayPoint.getTime().getTime() == endWayPoint.getTime().getTime()) {
+            if (!isNaN(speed))
                 forceSpeed = true;
         }
         Date endDate;
@@ -151,45 +167,45 @@ public class Gpx2Fit {
         if (forceSpeed) {
             endDate = startDate;
         } else {
-            endDate = lastWayPoint.getTime();
+            endDate = endWayPoint.getTime();
         }
 
+        // Determine speed, min- and max values, etc. from all waypoints
         for (final WayPoint wpt : pointsToUse) {
             final double ele = wpt.getEle();
-            if (!Double.isNaN(ele)) {
-                if (minEle > ele || Double.isNaN(minEle))
+            if (!isNaN(ele)) {
+                if (minEle > ele || isNaN(minEle))
                     minEle = ele;
-                if (maxEle < ele || Double.isNaN(maxEle))
+                if (maxEle < ele || isNaN(maxEle))
                     maxEle = ele;
             }
 
-            minLat = Math.min(minLat, wpt.getLat());
-            minLong = Math.min(minLong, wpt.getLon());
-            maxLat = Math.max(maxLat, wpt.getLat());
-            maxLong = Math.max(maxLong, wpt.getLon());
+            minLat = min(minLat, wpt.getLat());
+            minLong = min(minLong, wpt.getLon());
+            maxLat = max(maxLat, wpt.getLat());
+            maxLong = max(maxLong, wpt.getLon());
 
             double gspeed = speed;
-            if (last == null) {
+            if (lastWayPoint == null) {
                 wpt.setTotalDist(0);
             } else {
-                final double d = wpt.distance(last);
+                final double d = wpt.distance(lastWayPoint);
 
                 if (gpx2FitOptions.isUse3dDistance()) {
-                    totalDist += wpt.distance3D(last);
+                    totalDist += wpt.distance3D(lastWayPoint);
                 } else {
                     totalDist += d;
                 }
-
                 wpt.setTotalDist(totalDist);
 
-                if ((!Double.isNaN(ele)) && (!Double.isNaN(last.getEle()))) {
-                    final double dele = ele - last.getEle();
+                if ((!isNaN(ele)) && (!isNaN(lastWayPoint.getEle()))) {
+                    final double dele = ele - lastWayPoint.getEle();
                     if (dele > 0.0) {
-                        if (Double.isNaN(totalAsc))
+                        if (isNaN(totalAsc))
                             totalAsc = .0;
                         totalAsc += dele;
                     } else {
-                        if (Double.isNaN(totalDesc))
+                        if (isNaN(totalDesc))
                             totalDesc = .0;
                         totalDesc += Math.abs(dele);
                     }
@@ -205,43 +221,37 @@ public class Gpx2Fit {
                     wpt.setTime(endDate);
                 }
             }
-            last = wpt;
+            lastWayPoint = wpt;
         }
 
         // Every FIT COURSE file MUST contain a Lap message
         final LapMesg lapMesg = new LapMesg();
         lapMesg.setLocalNum(0);
-
         lapMesg.setTimestamp(new DateTime(startDate));
         lapMesg.setStartTime(new DateTime(startDate));
-
-        lapMesg.setStartPositionLat(firstWayPoint.getLatSemi());
-        lapMesg.setStartPositionLong(firstWayPoint.getLonSemi());
-
-        lapMesg.setEndPositionLat(lastWayPoint.getLatSemi());
-        lapMesg.setEndPositionLong(lastWayPoint.getLonSemi());
+        lapMesg.setStartPositionLat(startWayPoint.getLatSemi());
+        lapMesg.setStartPositionLong(startWayPoint.getLonSemi());
+        lapMesg.setEndPositionLat(endWayPoint.getLatSemi());
+        lapMesg.setEndPositionLong(endWayPoint.getLonSemi());
 
         final long duration = endDate.getTime() - startDate.getTime();
-
         lapMesg.setTotalTimerTime((float) (duration / 1000.0));
         lapMesg.setTotalDistance((float) totalDist);
         lapMesg.setAvgSpeed((float) (totalDist * 1000.0 / (double) duration));
-
         lapMesg.setTotalElapsedTime((float) (duration / 1000.0));
 
-        if (!Double.isNaN(totalAsc)) {
+        if (!isNaN(totalAsc)) {
             totalAsc += 0.5;
             lapMesg.setTotalAscent((int) totalAsc);
         }
-        if (!Double.isNaN(totalDesc)) {
+        if (!isNaN(totalDesc)) {
             totalDesc += 0.5;
             lapMesg.setTotalDescent((int) totalDesc);
         }
-        if (!Double.isNaN(maxEle)) {
+        if (!isNaN(maxEle)) {
             lapMesg.setMaxAltitude((float) maxEle);
         }
-
-        if (!Double.isNaN(minEle)) {
+        if (!isNaN(minEle)) {
             lapMesg.setMinAltitude((float) minEle);
         }
 
@@ -280,30 +290,18 @@ public class Gpx2Fit {
             pt_min_dist = gpx2FitOptions.getMinRoutePointDistance();
 
 
+        // Encode the waypoints from the GPX
         if (!skipExtraCP && !wayPoints.isEmpty()) {
             for (final WayPoint wpt : wayPoints) {
-                final CoursePointMesg cp = new CoursePointMesg();
-                cp.setLocalNum(0);
-
-                cp.setPositionLat(wpt.getLatSemi());
-                cp.setPositionLong(wpt.getLonSemi());
-                final String name = wpt.getName();
-                cp.setName(Objects.requireNonNullElse(name, ""));
-                cp.setType(CoursePoint.GENERIC);
+                final CoursePointMesg cp = getCoursePointMesg(wpt);
                 encoder.write(cp);
             }
         }
 
+        // Encode the routepoints from the GPX
         if (!skipExtraCP && !rtePoints.isEmpty()) {
             for (final WayPoint wpt : rtePoints) {
-                final CoursePointMesg cp = new CoursePointMesg();
-                cp.setLocalNum(0);
-
-                cp.setPositionLat(wpt.getLatSemi());
-                cp.setPositionLong(wpt.getLonSemi());
-                final String name = wpt.getName();
-                cp.setName(Objects.requireNonNullElse(name, ""));
-                cp.setType(CoursePoint.GENERIC);
+                final CoursePointMesg cp = getCoursePointMesg(wpt);
                 encoder.write(cp);
             }
         }
@@ -317,27 +315,27 @@ public class Gpx2Fit {
         eventMesg.setTimestamp(new DateTime(startDate));
         encoder.write(eventMesg);
 
-        DateTime timestamp = new DateTime(new Date(WayPoint.RefMilliSec));
-        long ltimestamp = startDate.getTime();
+        DateTime timestamp = new DateTime(new Date(DateTime.OFFSET));
+        long lastTimestamp = startDate.getTime();
 
-        long i = 0;
-        last = null;
+        long fakeTime = 0;
+        lastWayPoint = null;
 
         if (gpx2FitOptions.isInjectCoursePoints()) {
             for (final WayPoint wpt : trkPoints) {
                 final CoursePointMesg cp = new CoursePointMesg();
                 cp.setLocalNum(0);
 
-                i += 1;
-
-                if (duration != 0)
+                fakeTime += 1;
+                if (duration != 0) {
                     timestamp = new DateTime(wpt.getTime());
-                else
-                    timestamp = new DateTime(new Date(WayPoint.RefMilliSec + i * 1000));
+                } else {
+                    timestamp = new DateTime(new Date(DateTime.OFFSET + fakeTime * 1000));
+                }
 
                 final double dist = wpt.getTotalDist();
 
-                if (last == null) {
+                if (lastWayPoint == null) {
                     cp.setPositionLat(wpt.getLatSemi());
                     cp.setPositionLong(wpt.getLonSemi());
                     cp.setName("Start");
@@ -348,7 +346,7 @@ public class Gpx2Fit {
                     encoder.write(cp);
                 }
 
-                if (wpt.equals(lastWayPoint)) {
+                if (wpt.equals(endWayPoint)) {
                     cp.setPositionLat(wpt.getLatSemi());
                     cp.setPositionLong(wpt.getLonSemi());
                     cp.setName("End");
@@ -356,7 +354,7 @@ public class Gpx2Fit {
                     cp.setDistance((float) dist);
                     cp.setTimestamp(timestamp);
                     encoder.write(cp);
-                } else if ((dist - lcDist) > cp_min_dist) {
+                } else if ((dist - lastCoursePointDist) > cp_min_dist) {
                     cp.setName("");
                     cp.setType(CoursePoint.GENERIC);
                     cp.setPositionLat(wpt.getLatSemi());
@@ -364,26 +362,28 @@ public class Gpx2Fit {
                     cp.setDistance((float) dist);
                     cp.setTimestamp(timestamp);
                     encoder.write(cp);
-                    lcDist = dist;
+                    lastCoursePointDist = dist;
                 }
-                last = wpt;
+                lastWayPoint = wpt;
             }
 
-            i = 0;
-            last = null;
+            fakeTime = 0;
+            lastWayPoint = null;
         }
 
+        // Encode the trackpoints from the GPX
         for (final WayPoint wpt : trkPoints) {
-            i += 1;
+            fakeTime += 1;
 
-            if (duration != 0)
+            if (duration != 0) {
                 timestamp = new DateTime(wpt.getTime());
-            else
-                timestamp = new DateTime(new Date(WayPoint.RefMilliSec + i * 1000));
+            } else {
+                timestamp = new DateTime(new Date(DateTime.OFFSET + fakeTime * 1000));
+            }
 
             final double dist = wpt.getTotalDist();
 
-            if ((last == null) || (dist - lDist) > pt_min_dist) {
+            if ((lastWayPoint == null) || (dist - lastDist) > pt_min_dist) {
                 final RecordMesg r = new RecordMesg();
                 r.setLocalNum(0);
 
@@ -392,24 +392,24 @@ public class Gpx2Fit {
                 r.setDistance((float) dist);
                 r.setTimestamp(timestamp);
 
-                if (!Double.isNaN(wpt.getEle())) {
+                if (!isNaN(wpt.getEle())) {
                     r.setAltitude((float) wpt.getEle());
                 }
-                final long l = timestamp.getDate().getTime();
 
-                if (ltimestamp != l) {
-                    final double gspeed = (dist - lDist) / (l - ltimestamp) * 1000.0;
+                final long l = timestamp.getDate().getTime();
+                if (lastTimestamp != l) {
+                    final double gspeed = (dist - lastDist) / (l - lastTimestamp) * 1000.0;
                     r.setSpeed((float) gspeed);
                 } else {
                     r.setSpeed((float) 0.0);
                 }
 
                 encoder.write(r);
-                lDist = dist;
-                ltimestamp = l;
+                lastDist = dist;
+                lastTimestamp = l;
             }
 
-            last = wpt;
+            lastWayPoint = wpt;
         }
 
         final EventMesg eventMesg2 = new EventMesg();
@@ -422,5 +422,16 @@ public class Gpx2Fit {
         eventMesg2.setTimestamp(timestamp);
 
         encoder.write(eventMesg2);
+    }
+
+    private CoursePointMesg getCoursePointMesg(WayPoint wpt) {
+        final CoursePointMesg cp = new CoursePointMesg();
+        cp.setLocalNum(0);
+        cp.setPositionLat(wpt.getLatSemi());
+        cp.setPositionLong(wpt.getLonSemi());
+        final String name = wpt.getName();
+        cp.setName(Objects.requireNonNullElse(name, ""));
+        cp.setType(CoursePoint.GENERIC);
+        return cp;
     }
 }

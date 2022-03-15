@@ -1,5 +1,6 @@
 package ch.bubendorf.gpx2fit;
 
+import com.garmin.fit.DateTime;
 import org.gavaghan.geodesy.Ellipsoid;
 import org.gavaghan.geodesy.GeodeticCalculator;
 import org.gavaghan.geodesy.GlobalCoordinates;
@@ -11,9 +12,7 @@ public class WayPoint {
     // instantiate the calculator
     private static final GeodeticCalculator geoCalc = new GeodeticCalculator();
 
-    // milliseconds since UTC 00:00 Dec 31 1989"
-    public static final long RefMilliSec = 631065600000L;
-    public static final Date RefDate = new Date(RefMilliSec);
+    public static final Date RefDate = new Date(DateTime.OFFSET);
 
     // select a reference ellipsoid
     private static final Ellipsoid reference = Ellipsoid.WGS84;
