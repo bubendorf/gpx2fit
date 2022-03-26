@@ -160,7 +160,7 @@ public class Gpx2Fit {
         // Every FIT COURSE file MUST contain a Course message
         final CourseMesg courseMesg = new CourseMesg();
         courseMesg.setLocalNum(0);
-        courseMesg.setName(getName());
+        courseMesg.setName(getNonNullMax(getName(), 254));
         courseMesg.setSport(Sport.GENERIC);
         encoder.write(courseMesg);
 
@@ -442,8 +442,13 @@ public class Gpx2Fit {
         cp.setPositionLat(wpt.getLatSemi());
         cp.setPositionLong(wpt.getLonSemi());
         final String name = wpt.getName();
-        cp.setName(Objects.requireNonNullElse(name, ""));
+        cp.setName(getNonNullMax(name, 254));
         cp.setType(CoursePoint.GENERIC);
         return cp;
+    }
+
+    private static String getNonNullMax(final String input, final int maxLength) {
+        final String text = Objects.requireNonNullElse(input, "");
+        return text.substring(0, Math.min(text.length(), maxLength));
     }
 }
