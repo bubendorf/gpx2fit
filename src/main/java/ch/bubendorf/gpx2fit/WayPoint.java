@@ -24,6 +24,10 @@ public class WayPoint {
     private double totalDist = Double.NaN;
     private final String name;
 
+    public WayPoint(final double lat, final double lon) {
+        this(null, lat, lon, 0, null);
+    }
+
     public WayPoint(final String name, final double lat, final double lon, final double ele, final Date time) {
         this.lat = lat;
         this.lon = lon;

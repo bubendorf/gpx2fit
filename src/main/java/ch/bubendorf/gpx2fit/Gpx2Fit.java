@@ -50,6 +50,11 @@ public class Gpx2Fit {
                     .flatMap(TrackSegment::points)
                     .map(WayPoint::new)
                     .collect(Collectors.toList());
+
+            if (options.getTolerance() > 0) {
+                // Reduce track points using the Douglas-Peucker algorithm
+                trkPoints = Reducer.reduce(trkPoints, options.getTolerance());
+            }
         }
 
         if (options.isRoutes()) {

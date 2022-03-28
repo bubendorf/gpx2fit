@@ -39,6 +39,7 @@ public class Main {
         options.setTracks(cmdArgs.isTracks());
         options.setRoutes(cmdArgs.isRoutes());
         options.setWaypoints(cmdArgs.isWaypoints());
+        options.setTolerance(cmdArgs.getTolerance());
         final InputStream inputStream = "-".equals(inputFile) ? System.in : new FileInputStream(inputFile);
         final Gpx2Fit gpx2fit = new Gpx2Fit(inputFile, inputStream, options);
 

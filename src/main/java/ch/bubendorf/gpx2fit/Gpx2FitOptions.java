@@ -9,6 +9,7 @@ public class Gpx2FitOptions {
     private double minRoutePointDistance;
     private double minCoursePointDistance;
     private int maxPoints;
+    private double tolerance;
 
     private boolean tracks = true;
     private boolean routes = true;
@@ -23,6 +24,7 @@ public class Gpx2FitOptions {
         minRoutePointDistance = 1.0;
         minCoursePointDistance = 1000.0;
         maxPoints = 1000;
+        tolerance = 0;
     }
 
     public double getSpeed() {
@@ -111,5 +113,13 @@ public class Gpx2FitOptions {
 
     public void setWaypoints(final boolean waypoints) {
         this.waypoints = waypoints;
+    }
+
+    public void setTolerance(final double tolerance) {
+        this.tolerance = tolerance;
+    }
+
+    public double getTolerance() {
+        return tolerance;
     }
 }

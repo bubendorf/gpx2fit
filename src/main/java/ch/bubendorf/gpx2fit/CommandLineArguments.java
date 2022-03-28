@@ -16,6 +16,9 @@ public class CommandLineArguments {
     @Parameter(names = {"-v", "--version"}, description="Show the version info and exit", help = true)
     private boolean showVersion = false;
 
+    @Parameter(names = {"-d", "--tolerance"}, description="Min distance/tolerance of the track points to keep")
+    private double tolerance = 0;
+
     @Parameter(names = {"-t", "--track"}, description="Process only Tracks (<trk / trkseg>)")
     private boolean tracks = false;
 
@@ -43,6 +46,10 @@ public class CommandLineArguments {
 
     public boolean isShowVersion() {
         return showVersion;
+    }
+
+    public double getTolerance() {
+        return tolerance;
     }
 
     public boolean isTracks() {
