@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "com.github.ben-manes.versions" version "0.42.0"
+    id "com.github.ben-manes.versions" version "0.45.0"
     // Usage: gradle dependencyUpdates  -Drevision=release
 }
 
@@ -32,12 +32,12 @@ repositories {
 
 dependencies {
     implementation 'com.beust:jcommander:1.82'
-    implementation 'io.jenetics:jpx:3.0.0'
+    implementation 'io.jenetics:jpx:3.0.1'
     implementation 'org.gavaghan:geodesy:1.1.3'
     implementation(files('../FitSDKRelease_21.67.00/java/fit.jar'))
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
 }
 
 test {
