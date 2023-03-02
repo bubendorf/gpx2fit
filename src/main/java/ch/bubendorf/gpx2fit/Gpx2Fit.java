@@ -127,9 +127,9 @@ public class Gpx2Fit {
      * @param outfile File to write the result to.
      */
     public void writeFit(final File outfile) {
-        final FitFileEncoder encode = new FitFileEncoder(outfile);
-        writeFit(encode);
-        encode.close();
+        final FitFileEncoder encoder = new FitFileEncoder(outfile);
+        writeFit(encoder);
+        encoder.close();
     }
 
     protected void writeFit(final FitEncoder encoder) {
@@ -157,7 +157,7 @@ public class Gpx2Fit {
         fileIdMsg.setManufacturer(GARMIN);
         fileIdMsg.setType(COURSE);
         fileIdMsg.setProduct(424242); // Was 12345
-        fileIdMsg.setSerialNumber(42424242L); // Was 12345L
+        fileIdMsg.setSerialNumber(System.nanoTime()); // Was 12345L
         fileIdMsg.setNumber(pointsToUse.hashCode());
         fileIdMsg.setTimeCreated(new DateTime(new Date()));
         encoder.write(fileIdMsg); // Encode the FileID Message
