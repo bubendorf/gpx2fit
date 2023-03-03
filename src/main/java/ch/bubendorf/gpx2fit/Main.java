@@ -5,6 +5,7 @@ import com.beust.jcommander.JCommander;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.List;
 
 public class Main {
@@ -40,13 +41,14 @@ public class Main {
         options.setRoutes(cmdArgs.isRoutes());
         options.setWaypoints(cmdArgs.isWaypoints());
         options.setTolerance(cmdArgs.getTolerance());
+        final Date date = "-".equals(inputFile) ? null : new Date(new File(inputFile).lastModified());
         final InputStream inputStream = "-".equals(inputFile) ? System.in : new FileInputStream(inputFile);
         final Gpx2Fit gpx2fit = new Gpx2Fit(inputFile, inputStream, options);
 
         if ("-".equals(outputFile)) {
-            gpx2fit.writeFit(System.out);
+            gpx2fit.writeFit(System.out, date);
         } else {
-            gpx2fit.writeFit(new File(outputFile));
+            gpx2fit.writeFit(new File(outputFile), date);
         }
     }
 }

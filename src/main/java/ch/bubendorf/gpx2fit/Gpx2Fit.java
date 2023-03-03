@@ -114,9 +114,9 @@ public class Gpx2Fit {
      * @param outputStream OutputStream to write the result to
      * @throws IOException Something went wrong
      */
-    public void writeFit(final OutputStream outputStream) throws IOException {
+    public void writeFit(final OutputStream outputStream, final Date date) throws IOException {
         final FitBufferEncoder encoder = new FitBufferEncoder();
-        writeFit(encoder);
+        writeFit(encoder, date);
         final byte[] bytes = encoder.close();
         outputStream.write(bytes);
     }
@@ -126,13 +126,13 @@ public class Gpx2Fit {
      *
      * @param outfile File to write the result to.
      */
-    public void writeFit(final File outfile) {
+    public void writeFit(final File outfile, final Date date) {
         final FitFileEncoder encoder = new FitFileEncoder(outfile);
-        writeFit(encoder);
+        writeFit(encoder, date);
         encoder.close();
     }
 
-    protected void writeFit(final FitEncoder encoder) {
+    protected void writeFit(final FitEncoder encoder, final Date date) {
         if (pointsToUse.size() == 0) {
             // Nothing to do
             return;
@@ -154,12 +154,17 @@ public class Gpx2Fit {
         //Generate FileIdMessage
         // Every FIT file MUST contain a 'File ID' message as the first message
         final FileIdMesg fileIdMsg = new FileIdMesg();
-        fileIdMsg.setManufacturer(GARMIN);
         fileIdMsg.setType(COURSE);
-        fileIdMsg.setProduct(424242); // Was 12345
-        fileIdMsg.setSerialNumber(System.nanoTime()); // Was 12345L
+        fileIdMsg.setManufacturer(GARMIN);
+        fileIdMsg.setProduct(12041969); // Was 12345
+        fileIdMsg.setSerialNumber(26031968L); // Was 12345L
+        fileIdMsg.setTimeCreated(new DateTime(date == null ? new Date() : date));
+
         fileIdMsg.setNumber(pointsToUse.hashCode());
-        fileIdMsg.setTimeCreated(new DateTime(new Date()));
+//        fileIdMsg.setFaveroProduct();
+//        fileIdMsg.setGarminProduct();
+        fileIdMsg.setProductName("GarminExportMenu@Bubendorf");
+
         encoder.write(fileIdMsg); // Encode the FileID Message
 
         // Every FIT COURSE file MUST contain a Course message
